@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Enabling Scorecard – Forval Vietnam</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif;background:#f5f5f3;min-height:100vh;padding:1.5rem 1rem;color:#1a1a1a}
+.app{max-width:680px;margin:0 auto}
+.card{background:#fff;border:0.5px solid rgba(0,0,0,0.12);border-radius:12px;padding:1.5rem}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:10px 20px;border-radius:8px;border:0.5px solid rgba(0,0,0,0.2);background:transparent;color:#1a1a1a;font-size:14px;cursor:pointer;transition:background 0.15s;font-family:inherit}
+.btn:hover{background:#f0f0ee}
+.btn-primary{background:#185FA5;border-color:#185FA5;color:#fff}
+.btn-primary:hover{background:#0C447C;border-color:#0C447C}
+.btn-primary:disabled{opacity:0.4;cursor:not-allowed}
+.inp{width:100%;padding:10px 12px;border:0.5px solid rgba(0,0,0,0.2);border-radius:8px;background:#fff;color:#1a1a1a;font-size:14px;font-family:inherit}
+.inp:focus{outline:none;border-color:#185FA5;box-shadow:0 0 0 3px rgba(24,95,165,0.1)}
+.rating-row{display:flex;gap:8px;flex-wrap:wrap}
+.rating-btn{flex:1;min-width:52px;padding:12px 8px;border-radius:8px;border:0.5px solid rgba(0,0,0,0.15);background:#fff;cursor:pointer;text-align:center;transition:all 0.15s;font-family:inherit}
+.rating-btn:hover{border-color:#185FA5;background:#EEF5FC}
+.rating-btn.selected{background:#185FA5;border-color:#185FA5;color:#fff}
+.rating-btn .num{font-size:20px;font-weight:500;display:block;color:inherit}
+.rating-btn .lbl{font-size:10px;display:block;margin-top:3px;opacity:0.7;color:inherit}
+.progress-bar{height:4px;background:#e8e8e6;border-radius:2px;margin:0.5rem 0 1.5rem}
+.progress-fill{height:100%;border-radius:2px;background:#185FA5;transition:width 0.3s}
+.pillar-tag{display:inline-flex;align-items:center;gap:6px;font-size:12px;padding:4px 12px;border-radius:8px;font-weight:500;margin-bottom:14px}
+.score-bar-wrap{margin:10px 0}
+.score-bar-bg{height:10px;background:#f0f0ee;border-radius:5px;overflow:hidden}
+.score-bar-fill{height:100%;border-radius:5px;transition:width 0.8s}
+.action-item{display:flex;gap:10px;padding:12px 14px;background:#f8f8f6;border-radius:8px;margin:8px 0;font-size:13px;line-height:1.65;color:#444}
+.action-num{width:24px;height:24px;min-width:24px;border-radius:50%;background:#185FA5;color:#fff;font-size:11px;font-weight:500;display:flex;align-items:center;justify-content:center;margin-top:1px}
+.tag-dot{width:8px;height:8px;border-radius:50%;display:inline-block}
+.divider{height:0.5px;background:#e8e8e6;margin:14px 0}
+.fade-in{animation:fi 0.25s ease}
+@keyframes fi{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.header-bar{display:flex;align-items:center;gap:8px;margin-bottom:1.5rem;cursor:pointer;color:#888}
+.header-bar:hover{color:#444}
+.metric-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:1.2rem}
+.metric-chip{text-align:center;padding:12px 8px;border-radius:8px}
+.badge{display:inline-block;padding:4px 14px;border-radius:20px;font-size:13px;font-weight:500}
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#1a1a1a;color:#fff;padding:10px 20px;border-radius:8px;font-size:13px;opacity:0;transition:opacity 0.3s;pointer-events:none;z-index:999;white-space:nowrap}
+.toast.show{opacity:1}
+@media(max-width:480px){.rating-btn .lbl{display:none}.rating-btn{padding:14px 4px}}
+</style>
+</head>
+<body>
+<div class="app" id="root"></div>
+<div class="toast" id="toast"></div>
+<script>
+const SHEETS_URL="https://script.google.com/macros/s/AKfycbzaNIqrNROxc47ho1_5lF_wh0bAmv4em7LWa9w4kzFf_xK85YQT_NYxN0BkYPGzYLn3/exec";
+const PILLARS=[
+  {id:"block",name:"Tháo gỡ vật cản",en:"Block-Remover",color:"#185FA5",bg:"#E6F1FB",textColor:"#0C447C",
+   questions:[
+    "Nhân viên của tôi hiểu chính xác 'thế nào là hoàn thành tốt' mà không cần tôi hướng dẫn từng bước.",
+    "Trước khi giao việc, tôi đảm bảo nhân viên có đủ công cụ, thông tin và quyền hạn cần thiết để thực hiện.",
+    "Tôi chủ động cắt giảm thủ tục rườm rà, họp không cần thiết để đội ngũ tập trung vào công việc chuyên môn.",
+    "Tôi dám đứng ra từ chối hoặc trì hoãn những yêu cầu vô lý từ bên ngoài để bảo vệ sự tập trung của nhân viên.",
+    "Khi nhân viên bị kẹt ở một bước, tôi hành động nhanh để tháo gỡ thay vì chờ họ tự xoay sở."
+   ]},
+  {id:"empower",name:"Trao quyền & Làm gương",en:"Empowerer",color:"#0F6E56",bg:"#E1F5EE",textColor:"#085041",
+   questions:[
+    "Khi nhân viên làm sai, tôi tập trung vào việc cùng nhau học hỏi và cải thiện thay vì truy tìm người chịu lỗi.",
+    "Tôi cho phép nhân viên tự chọn cách thực hiện công việc (miễn đạt mục tiêu) thay vì ép họ làm theo cách của tôi.",
+    "Thái độ, kỷ luật và cường độ làm việc của tôi là tiêu chuẩn tôi muốn nhân viên noi theo — tôi làm trước khi yêu cầu.",
+    "Khi đã giao việc, tôi không can thiệp vào chi tiết thực hiện — tôi tin tưởng và chỉ theo dõi kết quả.",
+    "Khi nhân viên gặp vấn đề, tôi hỏi 'Em nghĩ nên làm thế nào?' trước khi đưa ra giải pháp của mình."
+   ]},
+  {id:"connect",name:"Kết nối & Công nhận",en:"Connector",color:"#3C3489",bg:"#EEEDFE",textColor:"#26215C",
+   questions:[
+    "Tôi thường xuyên giải thích cho nhân viên thấy công việc họ đang làm đóng góp trực tiếp thế nào vào mục tiêu lớn hơn của công ty.",
+    "Tôi khen ngợi sự tiến bộ và nỗ lực của nhân viên ngay lập tức, không đợi đến kỳ đánh giá cuối năm.",
+    "Tôi nắm rõ mục tiêu nghề nghiệp của từng nhân viên và chủ động tạo cơ hội phát triển phù hợp cho họ.",
+    "Các buổi nói chuyện 1-1 của tôi giúp nhân viên cảm thấy được lắng nghe thật sự và đầy năng lượng hơn.",
+    "Nhân viên của tôi hiểu rõ ý nghĩa và tác động thực sự của công việc — không chỉ là hoàn thành con số KPI."
+   ]}
+];
+const ACTIONS={
+  block:{
+    low:["Tuần này: Gặp 1-1 từng nhân viên, hỏi: 'Điều gì đang ngăn em làm việc hiệu quả nhất?' — cam kết giải quyết ít nhất 1 điểm trong 2 tuần tới.","Tháng này: Rà soát toàn bộ quy trình nhóm — gạch bỏ ít nhất 2 thủ tục hoặc cuộc họp không tạo giá trị thực. Thông báo kết quả cho team.","Ngay hôm nay: Viết ra 'Definition of Done' rõ ràng cho 3 công việc quan trọng nhất — để nhân viên biết chính xác 'thế nào là xong' mà không cần hỏi lại."],
+    mid:["Thiết lập '15-minute Blocker Check' đầu mỗi tuần: chỉ hỏi 'Tuần này có gì đang cản em không?' và cam kết giải quyết trước cuối ngày.","Xây dựng SOP cho 3 công việc lặp lại nhất trong nhóm — để nhân viên tự xử lý mà không cần hỏi bạn mỗi lần.","Lần tới nhận yêu cầu không hợp lý từ bộ phận khác, nói thẳng: 'Chúng tôi cần ưu tiên X trước — việc này chờ đến tuần sau được không?'"],
+    high:["Nâng cấp từ 'giải quyết blocker' sang 'ngăn blocker xuất hiện' — hàng tháng phân tích nguyên nhân gốc rễ của các tắc nghẽn thường gặp.","Huấn luyện nhân viên cấp cao tự tháo gỡ vật cản ở tầm của họ — không cần leo thang lên bạn.","Đo lường: Theo dõi 'số ngày trung bình để tháo gỡ 1 vấn đề' mỗi quý — mục tiêu giảm 20% so với quý trước."]
+  },
+  empower:{
+    low:["Thực hành ngay: Lần tới nhân viên hỏi 'Em phải làm thế nào?' — hỏi lại 'Em nghĩ có mấy cách? Cách nào khả thi nhất?' trước khi đưa ý kiến của bạn.","Tạo 'Failure-Safe Zone': Thông báo với team rằng mọi sai sót dưới ngưỡng cho phép sẽ được xem là cơ hội học hỏi — không ai bị trừng phạt vì dám thử.","Kiểm tra micro-management: 1 tuần tới, mỗi khi muốn can thiệp vào chi tiết đã giao, dừng 5 giây tự hỏi: 'Đây có thực sự cần thiết không?'"],
+    mid:["Áp dụng 'Delegate & Trust Protocol': Khi giao việc chỉ đặt 3 điều kiện — Mục tiêu, Deadline, Cách báo cáo — mọi thứ còn lại để nhân viên tự quyết.","Xây dựng thói quen làm gương: Mỗi tuần tự hỏi 'Tôi có đang làm đúng những gì tôi yêu cầu nhân viên không?' — chọn 1 hành vi cải thiện và cam kết công khai.","Vẽ bản đồ quyền tự quyết cho từng nhân viên — ai được tự quyết ở mức nào, cần báo cáo gì. Minh bạch về ranh giới."],
+    high:["Chuyển từ 'trao quyền' sang 'đào tạo người trao quyền': Chọn 1-2 nhân viên tiềm năng, dạy họ kỹ năng delegate để họ làm điều tương tự với đồng nghiệp.","Đo lường Autonomy Index: Hàng quý hỏi nhân viên 'Từ 1-10, bạn cảm thấy mình có bao nhiêu quyền tự chủ?' — mục tiêu duy trì trên 7/10.","Trong mọi cuộc họp giải quyết vấn đề, đặt mục tiêu cá nhân nói ít hơn 30% — phần còn lại để đặt câu hỏi và lắng nghe."]
+  },
+  connect:{
+    low:["Tuần này: Gặp riêng từng nhân viên, hỏi 2 câu: 'Điều gì trong công việc em thấy có ý nghĩa nhất?' và 'Mục tiêu nghề nghiệp của em trong 2 năm tới là gì?' — lắng nghe và ghi lại.","Thực hành công nhận tức thì: Mỗi tuần khen ngợi ít nhất 2 nhân viên vì hành vi cụ thể — không phải 'em làm tốt' mà là 'Tôi thấy hôm nay em đã [hành vi cụ thể] và điều đó giúp ích ở chỗ...'","Trong buổi họp tiếp theo: Dành 5 phút giải thích 'Tháng này chúng ta làm X vì nó đóng góp trực tiếp vào Y — không có chúng ta, điều đó sẽ xảy ra như thế này.'"],
+    mid:["Nâng cấp 1-1: 10 phút đầu hỏi về cảm xúc và năng lượng, 15 phút về công việc, 5 phút cuối hỏi 'Tôi có thể hỗ trợ em thêm điều gì?' Kết thúc bằng 1 điều tích cực bạn nhận ra ở họ.","Tạo 'Impact Board': Lập bảng nơi team cập nhật kết quả thực tế công việc tạo ra — tiết kiệm được bao nhiêu, feedback từ khách hàng, vấn đề được giải quyết.","Cùng mỗi nhân viên xây dựng 'Individual Development Plan' 1 trang — mục tiêu 6 tháng, kỹ năng cần phát triển, 1 cơ hội cụ thể bạn cam kết tạo ra cho họ."],
+    high:["Mỗi khi có thay đổi lớn, giải thích 'Tại sao' trước 'Cái gì' và 'Như thế nào' — giúp nhân viên hiểu bối cảnh và cảm thấy được tôn trọng.","Xây dựng văn hóa công nhận nhóm: Tạo nghi thức 'Shoutout Friday' — mỗi người chia sẻ 1 điều trân trọng ở một đồng nghiệp. Không chỉ từ bạn, mà từ cả team.","Đo lường Engagement hàng quý bằng 3 câu (1-10): 'Công việc có ý nghĩa?', 'Được công nhận?', 'Có cơ hội phát triển?' — theo dõi xu hướng và điều chỉnh."]
+  }
+};
+const LABELS=["Hiếm khi","Thỉnh thoảng","Thường xuyên","Rất tốt","Bản năng"];
+let state={screen:"welcome",name:"",dept:"",currentQ:0,answers:Array(15).fill(0),selected:0};
+const allQs=PILLARS.flatMap((p,pi)=>p.questions.map((q)=>({text:q,pi})));
+function getScores(ans){return PILLARS.map((_,pi)=>ans.slice(pi*5,pi*5+5).reduce((s,v)=>s+v,0))}
+function getLevel(score){if(score<=10)return"low";if(score<=18)return"mid";return"high"}
+function getLevelLabel(score){if(score<=10)return"Cần cải thiện ngay";if(score<=15)return"Đang phát triển";if(score<=20)return"Đủ năng lực";return"Xuất sắc"}
+function getLevelColor(score){if(score<=10)return"#E24B4A";if(score<=15)return"#EF9F27";if(score<=20)return"#1D9E75";return"#185FA5"}
+function pct(score,max){return Math.round(score/max*100)}
+function showToast(msg){const t=document.getElementById("toast");t.textContent=msg;t.classList.add("show");setTimeout(()=>t.classList.remove("show"),2500)}
+async function submitSheets(ans){
+  const scores=getScores(ans);
+  const total=ans.reduce((s,v)=>s+v,0);
+  const params=new URLSearchParams({
+    timestamp:new Date().toLocaleString("vi-VN"),name:state.name,department:state.dept||"—",
+    ...Object.fromEntries(ans.map((v,i)=>[`Q${i+1}`,v])),
+    pillar_block:scores[0],pillar_empower:scores[1],pillar_connect:scores[2],total,
+    level_block:getLevelLabel(scores[0]),level_empower:getLevelLabel(scores[1]),level_connect:getLevelLabel(scores[2])
+  });
+  try{await fetch(SHEETS_URL+"?"+params.toString(),{method:"GET",mode:"no-cors"})}catch(e){}
+}
+function render(){
+  const root=document.getElementById("root");
+  const s=state;
+  if(s.screen==="welcome"){
+    root.innerHTML=`<div class="fade-in">
+      <div style="text-align:center;padding:2rem 0 1.5rem">
+        <div style="width:64px;height:64px;border-radius:50%;background:#E6F1FB;margin:0 auto 1.2rem;display:flex;align-items:center;justify-content:center">
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#185FA5" stroke-width="1.8"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        </div>
+        <div style="font-size:11px;font-weight:500;letter-spacing:1.5px;color:#aaa;text-transform:uppercase;margin-bottom:8px">Forval Vietnam</div>
+        <h1 style="font-size:22px;font-weight:500;color:#1a1a1a;margin-bottom:8px">Enabling Scorecard</h1>
+        <p style="font-size:14px;color:#666;line-height:1.65">Bộ công cụ tự đánh giá năng lực kích hoạt đội ngũ<br>dành cho quản lý cấp trung</p>
+      </div>
+      <div class="card" style="margin-bottom:1rem">
+        <div class="metric-grid">
+          ${PILLARS.map(p=>`<div class="metric-chip" style="background:${p.bg}"><div style="font-size:11px;font-weight:500;color:${p.textColor};margin-bottom:2px">${p.name}</div><div style="font-size:10px;color:${p.color}">${p.en}</div></div>`).join("")}
+        </div>
+        <div class="divider"></div>
+        <div style="display:flex;flex-direction:column;gap:10px">
+          <div style="display:flex;gap:12px;align-items:center;font-size:13px;color:#555">
+            <div style="width:32px;height:32px;min-width:32px;border-radius:8px;background:#E6F1FB;display:flex;align-items:center;justify-content:center">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#185FA5" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+            </div>
+            <span><strong style="color:#1a1a1a">15 câu hỏi</strong> — 5 câu cho mỗi trụ cột năng lực</span>
+          </div>
+          <div style="display:flex;gap:12px;align-items:center;font-size:13px;color:#555">
+            <div style="width:32px;height:32px;min-width:32px;border-radius:8px;background:#E1F5EE;display:flex;align-items:center;justify-content:center">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#0F6E56" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            </div>
+            <span><strong style="color:#1a1a1a">5 – 7 phút</strong> — trả lời trung thực nhất có thể</span>
+          </div>
+          <div style="display:flex;gap:12px;align-items:center;font-size:13px;color:#555">
+            <div style="width:32px;height:32px;min-width:32px;border-radius:8px;background:#EEEDFE;display:flex;align-items:center;justify-content:center">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#3C3489" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+            </div>
+            <span><strong style="color:#1a1a1a">Kết quả tức thì</strong> — kèm 3 hành động thực chiến cụ thể</span>
+          </div>
+        </div>
+      </div>
+      <button class="btn btn-primary" onclick="go('info')" style="width:100%;padding:14px;font-size:15px">Bắt đầu đánh giá &rarr;</button>
+      <p style="text-align:center;font-size:12px;color:#ccc;margin-top:12px">Kết quả được lưu bảo mật vào hệ thống Forval Vietnam</p>
+    </div>`;
+  }
+  else if(s.screen==="info"){
+    root.innerHTML=`<div class="fade-in">
+      <div class="header-bar" onclick="go('welcome')">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+        <span style="font-size:13px">Quay lại</span>
+      </div>
+      <div class="card">
+        <h2 style="font-size:16px;font-weight:500;margin-bottom:1.2rem;color:#1a1a1a">Thông tin của bạn</h2>
+        <div style="margin-bottom:1rem">
+          <label style="font-size:13px;color:#666;display:block;margin-bottom:6px">Họ và tên <span style="color:#E24B4A">*</span></label>
+          <input class="inp" type="text" placeholder="Nguyễn Văn A" id="inp-name" value="${s.name}" oninput="state.name=this.value;updateBtn()">
+        </div>
+        <div style="margin-bottom:1.5rem">
+          <label style="font-size:13px;color:#666;display:block;margin-bottom:6px">Phòng ban / Bộ phận</label>
+          <input class="inp" type="text" placeholder="SPD, HR, Production..." id="inp-dept" value="${s.dept}" oninput="state.dept=this.value">
+        </div>
+        <div style="background:#f8f8f6;border-radius:8px;padding:14px;font-size:12px;color:#666;line-height:1.8;margin-bottom:1.5rem">
+          <div style="font-weight:500;color:#1a1a1a;margin-bottom:8px">Thang điểm đánh giá:</div>
+          <div style="display:flex;flex-wrap:wrap;gap:6px">
+            ${LABELS.map((l,i)=>`<span style="display:inline-flex;align-items:center;gap:4px;padding:3px 10px;background:#fff;border-radius:6px;border:0.5px solid #e0e0e0"><strong style="color:#185FA5">${i+1}</strong> <span style="color:#888">${l}</span></span>`).join("")}
+          </div>
+        </div>
+        <button class="btn btn-primary" id="start-btn" onclick="startQuiz()" style="width:100%;padding:13px;font-size:15px" ${!s.name.trim()?"disabled":""}>Bắt đầu 15 câu hỏi &rarr;</button>
+      </div>
+    </div>`;
+  }
+  else if(s.screen==="questions"){
+    const q=allQs[s.currentQ];
+    const p=PILLARS[q.pi];
+    const progress=Math.round((s.currentQ/15)*100);
+    root.innerHTML=`<div class="fade-in">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+        <span style="font-size:12px;color:#888">Câu ${s.currentQ+1} / 15</span>
+        <span style="font-size:12px;color:#888">${progress}%</span>
+      </div>
+      <div class="progress-bar"><div class="progress-fill" style="width:${progress}%"></div></div>
+      <div class="card" style="margin-bottom:1rem">
+        <div class="pillar-tag" style="background:${p.bg};color:${p.textColor}">
+          <span class="tag-dot" style="background:${p.color}"></span>${p.name}
+        </div>
+        <p style="font-size:15px;line-height:1.75;color:#1a1a1a;margin-bottom:1.5rem">${q.text}</p>
+        <div class="rating-row">
+          ${[1,2,3,4,5].map(n=>`<button class="rating-btn ${s.selected===n?"selected":""}" onclick="selectRating(${n})">
+            <span class="num">${n}</span><span class="lbl">${LABELS[n-1]}</span>
+          </button>`).join("")}
+        </div>
+      </div>
+      <button class="btn btn-primary" onclick="nextQ()" style="width:100%;padding:13px;font-size:15px" ${s.selected===0?"disabled":""}>
+        ${s.currentQ===14?"Xem kết quả của tôi &rarr;":"Câu tiếp theo &rarr;"}
+      </button>
+      ${s.currentQ>0?`<button class="btn" onclick="prevQ()" style="width:100%;padding:10px;font-size:13px;margin-top:8px;color:#888">&#8592; Câu trước</button>`:""}
+    </div>`;
+  }
+  else if(s.screen==="results"){
+    const scores=getScores(s.answers);
+    const total=s.answers.reduce((a,b)=>a+b,0);
+    const totalPct=Math.round(total/75*100);
+    const sortedIdx=[...scores.map((sc,i)=>({sc,i}))].sort((a,b)=>a.sc-b.sc).map(x=>x.i);
+    const pP=PILLARS[sortedIdx[0]],pA=ACTIONS[pP.id],pL=getLevel(scores[sortedIdx[0]]);
+    const sP=PILLARS[sortedIdx[1]];
+    let tLabel="",tMsg="";
+    if(totalPct<=40){tLabel="Cần cải thiện ngay";tMsg="Bạn đang ở giai đoạn đầu của hành trình Enabling. Tập trung vào những thay đổi nhỏ, cụ thể và kiên định thực hiện.";}
+    else if(totalPct<=60){tLabel="Đang phát triển";tMsg="Bạn đã có nền tảng tốt ở một số mảng. Tiếp tục đầu tư vào các điểm yếu sẽ tạo ra bước nhảy vọt rõ rệt.";}
+    else if(totalPct<=80){tLabel="Đủ năng lực";tMsg="Bạn đang thực hành Enabling khá tốt. Tập trung vào sự nhất quán và hệ thống hóa những gì đang hoạt động hiệu quả.";}
+    else{tLabel="Nhà lãnh đạo Enabling xuất sắc";tMsg="Bạn đã đạt đến mức độ Enabling tự nhiên. Nhiệm vụ tiếp theo là truyền dạy và nhân rộng mindset này trong tổ chức.";}
+    const rC=getLevelColor(Math.round(total/3));
+    const filled=Math.round(314*totalPct/100);
+    root.innerHTML=`<div class="fade-in">
+      <div style="text-align:center;padding:1.5rem 0 1rem">
+        <div style="font-size:11px;font-weight:500;letter-spacing:1.2px;color:#aaa;text-transform:uppercase;margin-bottom:6px">Kết quả đánh giá</div>
+        <h1 style="font-size:19px;font-weight:500;color:#1a1a1a;margin-bottom:4px">${s.name}</h1>
+        ${s.dept?`<p style="font-size:13px;color:#888">${s.dept}</p>`:""}
+      </div>
+      <div class="card" style="margin-bottom:1rem;text-align:center">
+        <svg width="130" height="130" viewBox="0 0 130 130" style="margin-bottom:10px">
+          <circle cx="65" cy="65" r="54" fill="none" stroke="#f0f0ee" stroke-width="9"/>
+          <circle cx="65" cy="65" r="54" fill="none" stroke="${rC}" stroke-width="9"
+            stroke-dasharray="${filled} 314" stroke-dashoffset="85"
+            stroke-linecap="round" transform="rotate(-90 65 65)"/>
+          <text x="65" y="60" text-anchor="middle" font-size="26" font-weight="500" fill="#1a1a1a">${total}</text>
+          <text x="65" y="78" text-anchor="middle" font-size="12" fill="#aaa">/ 75 điểm</text>
+        </svg>
+        <div><span class="badge" style="background:${rC}18;color:${rC};margin-bottom:10px">${tLabel}</span></div>
+        <p style="font-size:13px;color:#666;line-height:1.65;max-width:480px;margin:0 auto">${tMsg}</p>
+      </div>
+      <div class="card" style="margin-bottom:1rem">
+        <h2 style="font-size:14px;font-weight:500;margin-bottom:1rem;color:#1a1a1a">Điểm theo từng trụ cột</h2>
+        ${PILLARS.map((p,i)=>`
+          <div class="score-bar-wrap">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px">
+              <div><span style="font-size:13px;color:#1a1a1a;font-weight:500">${p.name}</span><span style="font-size:11px;color:#aaa;margin-left:6px">${p.en}</span></div>
+              <div style="display:flex;align-items:center;gap:8px">
+                <span style="font-size:13px;font-weight:500;color:${getLevelColor(scores[i])}">${scores[i]}/25</span>
+                <span style="font-size:10px;padding:2px 8px;border-radius:10px;background:${getLevelColor(scores[i])}18;color:${getLevelColor(scores[i])}">${getLevelLabel(scores[i])}</span>
+              </div>
+            </div>
+            <div class="score-bar-bg"><div class="score-bar-fill" style="width:${pct(scores[i],25)}%;background:${getLevelColor(scores[i])}"></div></div>
+          </div>
+          ${i<2?`<div class="divider"></div>`:""}
+        `).join("")}
+      </div>
+      <div class="card" style="margin-bottom:1rem">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">
+          <div style="width:4px;height:24px;border-radius:2px;background:${pP.color};flex-shrink:0"></div>
+          <div>
+            <h2 style="font-size:14px;font-weight:500;color:#1a1a1a">3 hành động ưu tiên ngay</h2>
+            <p style="font-size:12px;color:#888;margin-top:2px">Tập trung vào trụ cột yếu nhất: <strong style="color:${pP.color}">${pP.name}</strong></p>
+          </div>
+        </div>
+        ${pA[pL].map((a,i)=>`<div class="action-item"><div class="action-num">${i+1}</div><div>${a}</div></div>`).join("")}
+        ${sortedIdx[0]!==sortedIdx[1]?`
+        <div style="margin-top:14px;padding-top:14px;border-top:0.5px solid #e8e8e6">
+          <p style="font-size:12px;color:#888;margin-bottom:8px">Tiếp theo cần chú ý: <strong style="color:${sP.color}">${sP.name}</strong></p>
+          <div class="action-item" style="margin:0;border-left:3px solid ${sP.color}">
+            <div class="action-num" style="background:${sP.color}">+</div>
+            <div style="font-size:12px">${ACTIONS[sP.id][getLevel(scores[sortedIdx[1]])][0]}</div>
+          </div>
+        </div>`:""}
+      </div>
+      <div style="background:#f0f7ff;border-radius:8px;padding:14px;font-size:12px;color:#555;line-height:1.7;margin-bottom:1.5rem;border-left:3px solid #185FA5">
+        <strong style="color:#1a1a1a">Gợi ý:</strong> Lưu lại kết quả này và làm lại sau 30 ngày thực hành để thấy sự tiến bộ của mình.
+      </div>
+      <div style="display:flex;gap:10px;margin-bottom:2rem">
+        <button class="btn" onclick="restart()" style="flex:1;padding:12px">Làm lại từ đầu</button>
+        <button class="btn btn-primary" onclick="copyResult()" style="flex:1;padding:12px">Sao chép kết quả</button>
+      </div>
+      <p style="text-align:center;font-size:11px;color:#ccc;padding-bottom:1rem">Enabling Scorecard &copy; Forval Vietnam &bull; Stronger – Smarter – Happier</p>
+    </div>`;
+  }
+}
+function go(screen){state.screen=screen;render()}
+function updateBtn(){const b=document.getElementById("start-btn");if(b)b.disabled=!state.name.trim()}
+function startQuiz(){if(!state.name.trim())return;state.screen="questions";state.currentQ=0;state.answers=Array(15).fill(0);state.selected=0;render()}
+function selectRating(n){state.selected=n;render()}
+function prevQ(){if(state.currentQ>0){state.currentQ--;state.selected=state.answers[state.currentQ]||0;render()}}
+function nextQ(){
+  if(!state.selected)return;
+  state.answers[state.currentQ]=state.selected;
+  state.selected=0;
+  if(state.currentQ<14){state.currentQ++;render();}
+  else{state.screen="results";submitSheets(state.answers);render();}
+}
+function restart(){state={screen:"welcome",name:state.name,dept:state.dept,currentQ:0,answers:Array(15).fill(0),selected:0};render()}
+function copyResult(){
+  const scores=getScores(state.answers);
+  const total=state.answers.reduce((a,b)=>a+b,0);
+  const text=`ENABLING SCORECARD – KẾT QUẢ ĐÁNH GIÁ\n${"─".repeat(40)}\nHọ tên: ${state.name}\nBộ phận: ${state.dept||"—"}\nNgày: ${new Date().toLocaleDateString("vi-VN")}\n\nTổng điểm: ${total}/75\n\n${PILLARS.map((p,i)=>`${p.name}: ${scores[i]}/25 — ${getLevelLabel(scores[i])}`).join("\n")}\n\n© Forval Vietnam – Stronger Smarter Happier`;
+  if(navigator.clipboard){navigator.clipboard.writeText(text).then(()=>showToast("Đã sao chép kết quả!")).catch(()=>showToast("Vui lòng thử lại"));}
+  else{const ta=document.createElement("textarea");ta.value=text;document.body.appendChild(ta);ta.select();document.execCommand("copy");document.body.removeChild(ta);showToast("Đã sao chép kết quả!");}
+}
+render();
+</script>
+</body>
+</html>
