@@ -110,7 +110,7 @@ async function submitSheets(ans){
     pillar_block:scores[0],pillar_empower:scores[1],pillar_connect:scores[2],total,
     level_block:getLevelLabel(scores[0]),level_empower:getLevelLabel(scores[1]),level_connect:getLevelLabel(scores[2])
   });
-  try{await fetch(SHEETS_URL+"?"+params.toString(),{method:"GET",mode:"no-cors"})}catch(e){}
+  try{const img=new Image();img.src=SHEETS_URL+"?"+params.toString();}catch(e){}
 }
 function render(){
   const root=document.getElementById("root");
